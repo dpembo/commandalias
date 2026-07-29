@@ -1,0 +1,8 @@
+{
+  "id": "commandalias",
+  "name": "CommandAlias",
+  "version": "1.0.0",
+  "description": "Alias any proxy command to another, transparently respecting the target's permissions.",
+  "authors": ["dpembo"],
+  "main": "uk.globeworks.commandalias.velocity.CommandAliasVelocityPlugin"
+}

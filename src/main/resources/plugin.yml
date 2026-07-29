@@ -1,0 +1,20 @@
+name: CommandAlias
+version: '1.0.0'
+main: uk.globeworks.commandalias.CommandAliasPlugin
+api-version: '1.21'
+author: dpembo
+description: Alias any command to any other command, transparently respecting the target command's permissions.
+
+commands:
+  commandalias:
+    description: List active aliases, or reload them from config.yml
+    usage: /commandalias <help|reload>
+    permission: commandalias.use
+
+permissions:
+  commandalias.use:
+    description: Allows viewing the list of active aliases (/commandalias help)
+    default: true
+  commandalias.admin:
+    description: Allows reloading CommandAlias's configuration
+    default: op

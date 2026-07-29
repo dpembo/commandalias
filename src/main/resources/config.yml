@@ -1,0 +1,23 @@
+# CommandAlias config
+#
+# Format: aliasName: targetCommand
+#   - aliasName   is the new command players will type, e.g. "ah"
+#   - targetCommand is the existing command it should run, e.g. "ahouse"
+#
+# Arguments typed after the alias are passed straight through, e.g.
+# "/ah sell" runs "/ahouse sell". Permissions are NOT set per-alias here -
+# the alias always defers to whatever permission the target command itself
+# requires, so you don't need to touch LuckPerms for aliases at all.
+#
+# You can also alias a command PLUS a fixed subcommand, e.g.
+# "lphelp: lp help" makes /lphelp run /lp help, and /lphelp permission
+# would run /lp help permission.
+#
+# Reload after editing with: /commandalias reload
+
+aliases:
+  ah: ahouse
+  lphelp: lp help
+  #tp: teleport
+  #h: home
+  #bal: balance
