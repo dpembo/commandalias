@@ -11,12 +11,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
 
     private final List<DynamicAliasCommand> registered = new ArrayList<>();
+    private final List<MultiSubAliasCommand> registeredMulti = new ArrayList<>();
     private CommandMap commandMap;
 
     @Override
@@ -81,7 +85,8 @@ public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
     }
 
     private void sendHelp(CommandSender sender) {
-        if (registered.isEmpty()) {
+        int total = registered.size() + registeredMulti.stream().mapToInt(c -> c.getSubAliases().size()).sum();
+        if (total == 0) {
             sender.sendMessage("§eCommandAlias: no aliases are currently registered.");
             return;
         }
@@ -90,6 +95,11 @@ public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
         for (DynamicAliasCommand cmd : registered) {
             String note = cmd.isTargetResolved() ? "" : " §c(target not currently loaded)";
             sender.sendMessage("  §a/" + cmd.getLabel() + " §7-> §a/" + cmd.getTargetLabel() + note);
+        }
+        for (MultiSubAliasCommand cmd : registeredMulti) {
+            for (Map.Entry<String, String> entry : cmd.getSubAliases().entrySet()) {
+                sender.sendMessage("  §a/" + cmd.getLabel() + " " + entry.getKey() + " §7-> §a/" + entry.getValue());
+            }
         }
     }
 
@@ -104,6 +114,10 @@ public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
             return;
         }
 
+        // Separate single-word aliases from multi-word (space-containing) aliases
+        Map<String, String> singleAliases = new LinkedHashMap<>();
+        Map<String, Map<String, String>> multiAliases = new LinkedHashMap<>();
+
         for (String rawAlias : section.getKeys(false)) {
             String target = section.getString(rawAlias);
             String aliasName = rawAlias.toLowerCase().trim();
@@ -114,17 +128,54 @@ public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
             }
             target = target.trim();
 
+            if (aliasName.contains(" ")) {
+                String[] parts = aliasName.split("\\s+", 2);
+                multiAliases.computeIfAbsent(parts[0], k -> new LinkedHashMap<>()).put(parts[1], target);
+            } else {
+                singleAliases.put(aliasName, target);
+            }
+        }
+
+        // Remove any multi-alias group whose first word conflicts with a simple alias
+        Iterator<String> iter = multiAliases.keySet().iterator();
+        while (iter.hasNext()) {
+            String firstWord = iter.next();
+            if (singleAliases.containsKey(firstWord)) {
+                getLogger().warning("Skipping multi-sub-aliases for '" + firstWord + "': conflicts with a " +
+                        "simple alias of the same name. Rename one of them.");
+                iter.remove();
+            }
+        }
+
+        // Register single-word aliases
+        for (Map.Entry<String, String> entry : singleAliases.entrySet()) {
+            String aliasName = entry.getKey();
+            String target = entry.getValue();
             if (commandMap.getCommand(aliasName) != null) {
                 getLogger().warning("Alias '" + aliasName + "' was NOT registered: a command with that " +
                         "name/label already exists (possibly from another plugin). Pick a different alias name.");
                 continue;
             }
-
             DynamicAliasCommand aliasCommand = new DynamicAliasCommand(aliasName, target, commandMap, getLogger());
             commandMap.register(getName().toLowerCase(), aliasCommand);
             registered.add(aliasCommand);
-
             getLogger().info("Registered alias '/" + aliasName + "' -> '/" + target + "'");
+        }
+
+        // Register multi-word alias groups
+        for (Map.Entry<String, Map<String, String>> entry : multiAliases.entrySet()) {
+            String firstWord = entry.getKey();
+            if (commandMap.getCommand(firstWord) != null) {
+                getLogger().warning("Multi-alias '" + firstWord + "' was NOT registered: a command with that " +
+                        "name/label already exists (possibly from another plugin). Pick a different alias name.");
+                continue;
+            }
+            MultiSubAliasCommand multiCmd = new MultiSubAliasCommand(firstWord, entry.getValue(), commandMap, getLogger());
+            commandMap.register(getName().toLowerCase(), multiCmd);
+            registeredMulti.add(multiCmd);
+            for (String subKey : entry.getValue().keySet()) {
+                getLogger().info("Registered multi-alias '/" + firstWord + " " + subKey + "' -> '/" + entry.getValue().get(subKey) + "'");
+            }
         }
 
         // Registering into the CommandMap doesn't push an updated command
@@ -142,8 +193,12 @@ public class CommandAliasPlugin extends JavaPlugin implements CommandExecutor {
             for (DynamicAliasCommand cmd : registered) {
                 cmd.unregister(commandMap);
             }
+            for (MultiSubAliasCommand cmd : registeredMulti) {
+                cmd.unregister(commandMap);
+            }
         }
         registered.clear();
+        registeredMulti.clear();
     }
 
     /**

@@ -1,17 +1,24 @@
 # CommandAlias config
 #
-# Format: aliasName: targetCommand
-#   - aliasName   is the new command players will type, e.g. "ah"
-#   - targetCommand is the existing command it should run, e.g. "ahouse"
+# Simple alias:
+#   aliasName: targetCommand
+#   e.g. "ah: ahouse" makes /ah run /ahouse.
+#   Extra args typed after the alias are appended, so /ah sell -> /ahouse sell.
+#   Permissions are NOT set here - the alias defers to the target command's
+#   own permission check, so no LuckPerms changes are needed for aliases.
 #
-# Arguments typed after the alias are passed straight through, e.g.
-# "/ah sell" runs "/ahouse sell". Permissions are NOT set per-alias here -
-# the alias always defers to whatever permission the target command itself
-# requires, so you don't need to touch LuckPerms for aliases at all.
+# Fixed-subcommand alias:
+#   "lphelp: lp help" makes /lphelp run /lp help, and /lphelp user -> /lp help user.
 #
-# You can also alias a command PLUS a fixed subcommand, e.g.
-# "lphelp: lp help" makes /lphelp run /lp help, and /lphelp permission
-# would run /lp help permission.
+# Multi-word alias (quote the key; first word is the registered command):
+#   "warp pvpblue": tp 12 12 12
+#   "warp pvpred":  tp 22 22 22
+#   "warp spawn":   tp 0 0 0
+#   "warp audience left":  tp 2 2 2
+#   "warp audience right": tp 4 4 4
+#   All entries sharing the same first word are grouped automatically.
+#   /warp pvpblue runs /tp 12 12 12; any extra args are appended to the target.
+#   Tab-complete works: /warp <tab> suggests pvpblue, pvpred, spawn, audience.
 #
 # Reload after editing with: /commandalias reload
 
@@ -21,3 +28,9 @@ aliases:
   #tp: teleport
   #h: home
   #bal: balance
+  # Multi-word alias examples (uncomment and adjust to use):
+  #"warp pvpblue": tp 12 12 12
+  #"warp pvpred":  tp 22 22 22
+  #"warp spawn":   tp 0 0 0
+  #"warp audience left":  tp 2 2 2
+  #"warp audience right": tp 4 4 4
